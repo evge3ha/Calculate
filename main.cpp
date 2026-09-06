@@ -1,5 +1,11 @@
-#include "calculator.h"
+#include "mainwindow.h"
 
-int main() {
-    return RunCalculatorCycle() ? 0 : 1;
+#include <QApplication>
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
 }

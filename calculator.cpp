@@ -1,81 +1,56 @@
-#include <iostream>
-#include <string>
-#include <cmath>
 #include "calculator.h"
 
-bool ReadNumber(Number& result) {
-    if (!(std::cin >> result)) {
-        std::cerr << "Error: Numeric operand expected" << std::endl;
-        return false;
-    }
-    return true;
+// Реализуйте здесь методы класса.
+void Calculator::Set(Number n) {
+    result_ = n;
 }
 
-bool RunCalculatorCycle() {
-    Number current_value = 0;
-    Number operand       = 0;
-    Number memory        = 0;
-    bool is_memory_saved = false;
-    std::string command;
+Number Calculator::GetNumber() const {
+    return result_;
+}
 
-    if (!ReadNumber(current_value)) {
-        return false;
+void Calculator::Add(Number n) {
+    result_ += n;
+}
+
+void Calculator::Sub(Number n) {
+    result_ -= n;
+}
+
+void Calculator::Div(Number n) {
+    if (n != 0) {
+        result_ /= n;
+    } else {
+        result_ = 0;
     }
+}
 
-    while (std::cin >> command) {
-        if (command == "q") {
-            return true;
-        } else if (command == "+") {
-            if (!ReadNumber(operand)) {
-                return false;
-            }
-            current_value += operand;
-        } else if (command == "-") {
-            if (!ReadNumber(operand)) {
-                return false;
-            }
-            current_value -= operand;
-        } else if (command == "*") {
-            if (!ReadNumber(operand)) {
-                return false;
-            }
-            current_value *= operand;
-        } else if (command == "/") {
-            if (!ReadNumber(operand)) {
-                return false;
-            }
-            if (operand == 0) {
-                std::cerr << "Error: Division by zero" << std::endl;
-                return false;
-            }
-            current_value /= operand;
-        } else if (command == "**") {
-            if (!ReadNumber(operand)) {
-                return false;
-            }
-            current_value = std::pow(current_value, operand);
-        } else if (command == "c") {
-            current_value = 0;
-        } else if (command == "=") {
-            std::cout << current_value << std::endl;
-        } else if (command == ":") {
-            if (!ReadNumber(operand)) {
-                return false;
-            }
-            current_value = operand;
-        } else if (command == "s") {
-            memory = current_value;
-            is_memory_saved = true;
-        } else if (command == "l") {
-            if (!is_memory_saved) {
-                std::cerr << "Error: Memory is empty" << std::endl;
-                return false;
-            }
-            current_value = memory;
-        } else {
-            std::cerr << "Error: Unknown token " << command << std::endl;
-            return false;
+void Calculator::Mul(Number n) {
+    result_ *= n;
+}
+
+void Calculator::Pow(Number n) {
+    if (n == 0) {
+        result_ = 1;
+    } else if (n > 0) {
+        Number original = result_;
+        for (int i = 1; i < n; ++i) {
+            result_ *= original;
         }
     }
-    return true;
+}
+void Calculator::Save() {
+    memory_ = result_;
+    has_memory_ = true;
+}
+void Calculator::Load() {
+    if (has_memory_) {
+        result_ = memory_;
+    }
+}
+bool Calculator::HasMem() const {
+    return has_memory_;
+}
+std::string Calculator::GetNumberRepr() const {
+    return std::to_string(result_);
 }
