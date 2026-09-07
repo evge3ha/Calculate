@@ -95,4 +95,5 @@ private:
     Operation current_operation_ = Operation::NO_OPERATION;
     Number number_member_{};
     bool member_flag_ = false;
+    bool has_result_ = false;
 };
