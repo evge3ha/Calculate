@@ -1,19 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <QDebug>
-#include <QtMath>
-
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+
+    connect(ui->cmb_controller, &QComboBox::currentIndexChanged, this,
+            &MainWindow::on_cmb_controller_currentIndexChanged);
+
     ui->l_result->setText("0");
     ui->l_memory->setText("");
     ui->l_formula->setText("");
-
-    SetText("0");
-    has_result_ = false;
+    SetExtraKey(std::nullopt);
 }
 
 
@@ -21,314 +20,266 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
+void MainWindow::SetDigitKeyCallback(std::function<void (int)> cb)
+{
+    digit_cb_ = std::move(cb);
+}
 
-QString RemoveTrailingZeroes(const QString &text) {
-    for (qsizetype i = 0; i < text.size(); ++i) {
-        if (text[i] != '0') {
-            return text.mid(i);
-        }
+
+void MainWindow::SetProcessOperationKeyCallback(std::function<void (Operation)> cb)
+{
+    operation_cb_ = std::move(cb);
+}
+
+
+void MainWindow::SetProcessControlKeyCallback(std::function<void (ControlKey)> cb)
+{
+    control_cb_ = std::move(cb);
+}
+
+
+void MainWindow::SetControllerCallback(std::function<void (ControllerType)> cb)
+{
+    controller_cb_ = std::move(cb);
+}
+
+
+void MainWindow::SetInputText(const std::string &text)
+{
+    ui->l_result->setStyleSheet("");
+    ui->l_result->setText(QString::fromStdString(text));
+}
+
+
+void MainWindow::SetErrorText(const std::string &text)
+{
+    ui->l_result->setStyleSheet("color: red;");
+    ui->l_result->setText(QString::fromStdString(text));
+}
+
+
+void MainWindow::SetFormulaText(const std::string &text)
+{
+    ui->l_formula->setText(QString::fromStdString(text));
+}
+
+
+void MainWindow::SetMemText(const std::string &text)
+{
+    ui->l_memory->setText(QString::fromStdString(text));
+}
+
+
+void MainWindow::SetExtraKey(const std::optional<std::string> &key)
+{
+    if(key == std::nullopt) {
+        ui->tb_extra->setVisible(false);
+    } else {
+        ui->tb_extra->setVisible(true);
+        ui->tb_extra->setText(QString::fromStdString(key.value()));
     }
-    return "";
 }
 
 
-QString NormalizeNumber(const QString &text) {
-    if (text.isEmpty()) {
-        return "0";
+void MainWindow::on_tb_seven_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(7);
     }
-    if (text.startsWith('.')) {
-        return NormalizeNumber("0" + text);
+}
+
+
+void MainWindow::on_tb_eight_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(8);
     }
-    if (text.startsWith('-')) {
-        return "-" + NormalizeNumber(text.mid(1));
+}
+
+
+void MainWindow::on_tb_nine_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(9);
     }
-    if (text.startsWith('0') && !text.startsWith("0.")) {
-        return NormalizeNumber(RemoveTrailingZeroes(text));
+}
+
+
+void MainWindow::on_tb_four_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(4);
     }
-    return text;
 }
 
 
-QString OpToString(Operation op) {
-    switch(op) {
-    case Operation::NO_OPERATION: return "";
-    case Operation::ADDITION: return "+";
-    case Operation::DIVISION: return "÷";
-    case Operation::MULTIPLICATION: return "×";
-    case Operation::SUBTRACTION: return "−";
-    case Operation::POWER: return "^";
+void MainWindow::on_tb_five_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(5);
     }
-    return "";
-}
-
-
-void MainWindow::on_tb_seven_clicked() {
-    AddText("7");
-}
-
-
-void MainWindow::on_tb_eight_clicked() {
-    AddText("8");
-}
-
-
-void MainWindow::on_tb_nine_clicked() {
-    AddText("9");
-}
-
-
-void MainWindow::on_tb_four_clicked() {
-    AddText("4");
-}
-
-
-void MainWindow::on_tb_five_clicked() {
-    AddText("5");
 }
 
 
 void MainWindow::on_tb_six_clicked()
 {
-    AddText("6");
-}
-
-
-void MainWindow::on_tb_one_clicked() {
-    AddText("1");
-}
-
-
-void MainWindow::on_tb_two_clicked() {
-    AddText("2");
-}
-
-
-void MainWindow::on_tb_three_clicked() {
-    AddText("3");
-}
-
-
-void MainWindow::on_tb_zero_clicked() {
-    AddText("0");
-}
-
-
-void MainWindow::SetText(const QString &text) {
-    input_number_ = NormalizeNumber(text);
-    active_number_ = input_number_.toDouble();
-
-    ui->l_result->setText(input_number_);
-}
-
-
-void MainWindow::AddText(const QString &suffix) {
-    if (has_result_) {
-        ui->l_formula->setText("");
-        input_number_ = "";
-        has_result_ = false;
+    if(digit_cb_) {
+        digit_cb_(6);
     }
-
-    if (input_number_ == "0" && suffix != ".") {
-        input_number_ = suffix;
-    } else {
-        input_number_ += suffix;
-    }
-
-    SetText(input_number_);
 }
 
 
-void MainWindow::SetOperation(Operation op) {
-    if (has_result_) {
-        ui->l_formula->setText("");
-        has_result_ = false;
+void MainWindow::on_tb_one_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(1);
     }
+}
 
-    if (current_operation_ != Operation::NO_OPERATION && input_number_.isEmpty()) {
-        current_operation_ = op;
-        QString str = QString("%1 %2")
-                          .arg(calculator_.GetNumber())
-                          .arg(OpToString(current_operation_));
 
-        ui->l_formula->setText(str);
+void MainWindow::on_tb_two_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(2);
+    }
+}
+
+
+void MainWindow::on_tb_three_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(3);
+    }
+}
+
+
+void MainWindow::on_tb_zero_clicked()
+{
+    if(digit_cb_) {
+        digit_cb_(0);
+    }
+}
+
+
+void MainWindow::on_tb_extra_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::EXTRA_KEY);
+    }
+}
+
+void MainWindow::on_tb_negate_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::PLUS_MINUS);
+    }
+}
+
+
+void MainWindow::on_tb_backspace_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::BACKSPACE);
+    }
+}
+
+
+void MainWindow::on_tb_power_clicked()
+{
+    if (operation_cb_) {
+        operation_cb_(Operation::POWER);
+    }
+}
+
+
+void MainWindow::on_tb_divide_clicked()
+{
+    if (operation_cb_) {
+        operation_cb_(Operation::DIVISION);
+    }
+}
+
+
+void MainWindow::on_tb_multiplicate_clicked()
+{
+    if (operation_cb_) {
+        operation_cb_(Operation::MULTIPLICATION);
+    }
+}
+
+void MainWindow::on_tb_substract_clicked()
+{
+    if (operation_cb_) {
+        operation_cb_(Operation::SUBTRACTION);
+    }
+}
+
+void MainWindow::on_tb_add_clicked()
+{
+    if (operation_cb_) {
+        operation_cb_(Operation::ADDITION);
+    }
+}
+
+void MainWindow::on_tb_equal_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::EQUALS);
+    }
+}
+
+void MainWindow::on_tb_reset_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::CLEAR);
+    }
+}
+
+void MainWindow::on_tb_ms_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::MEM_SAVE);
+    }
+}
+
+void MainWindow::on_tb_mc_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::MEM_CLEAR);
+    }
+}
+
+void MainWindow::on_tn_mr_clicked()
+{
+    if(control_cb_){
+        control_cb_(ControlKey::MEM_LOAD);
+    }
+}
+
+void MainWindow::on_cmb_controller_currentIndexChanged(int index)
+{
+    if(!controller_cb_) {
         return;
     }
 
-    if (!input_number_.isEmpty()) {
-        calculator_.Set(active_number_);
+    const QString text = ui->cmb_controller->currentText();
+    ControllerType type = ControllerType::DOUBLE;
+
+    if (text == "double") {
+        type = ControllerType::DOUBLE;
+    } else if (text == "float"){
+        type = ControllerType::FLOAT;
+    } else if (text == "int") {
+        type = ControllerType::INT;
+    } else if (text == "uint8_t") {
+        type = ControllerType::UINT8_T;
+    } else if (text == "int64_t") {
+        type = ControllerType::INT64_T;
+    } else if (text == "size_t") {
+        type = ControllerType::SIZE_T;
+    } else if (text == "Rational") {
+        type = ControllerType::RATIONAL;
     }
-
-    current_operation_ = op;
-    QString str = QString("%1 %2")
-                      .arg(calculator_.GetNumber())
-                      .arg(OpToString(current_operation_));
-
-    ui->l_formula->setText(str);
-    input_number_ = {};
+    controller_cb_(type);
 }
 
-
-void MainWindow::on_tb_comma_clicked() {
-    if (has_result_) {
-        ui->l_formula->setText("");
-        input_number_ = "0";
-        has_result_ = false;
-    }
-
-    if(input_number_.contains(".")){
-        return;
-    }
-
-    AddText(".");
-}
-
-
-void MainWindow::on_tb_negate_clicked() {
-    if (has_result_) {
-        ui->l_formula->setText("");
-        has_result_ = false;
-    }
-
-    if (input_number_.isEmpty() || input_number_ == "0") {
-        return;
-    }
-
-    if (input_number_.startsWith("-")) {
-        SetText(input_number_.mid(1));
-    } else {
-        input_number_.push_front("-");
-        SetText(input_number_);
-    }
-}
-
-
-void MainWindow::on_tb_backspace_clicked() {
-    if (has_result_) {
-        ui->l_formula->setText("");
-        input_number_ = "0";
-        has_result_ = false;
-        SetText("0");
-        return;
-    }
-
-    if (input_number_.isEmpty()) {
-        return;
-    }
-
-    input_number_.chop(1);
-    if (input_number_.isEmpty() || input_number_ == "-") {
-        SetText("0");
-    } else {
-        SetText(input_number_);
-    }
-}
-
-
-void MainWindow::on_tb_power_clicked() {
-    SetOperation(Operation::POWER);
-}
-
-
-void MainWindow::on_tb_divide_clicked() {
-    SetOperation(Operation::DIVISION);
-}
-
-
-void MainWindow::on_tb_multiplicate_clicked() {
-    SetOperation(Operation::MULTIPLICATION);
-}
-
-
-void MainWindow::on_tb_substract_clicked() {
-    SetOperation(Operation::SUBTRACTION);
-}
-
-
-void MainWindow::on_tb_add_clicked() {
-    SetOperation(Operation::ADDITION);
-}
-
-
-void MainWindow::on_tb_equal_clicked() {
-    if (current_operation_ == Operation::NO_OPERATION) {
-        return;
-    }
-
-    if (input_number_.isEmpty()) {
-        active_number_ = calculator_.GetNumber();
-    }
-
-    QString str = QString("%1 %2 %3 =")
-                      .arg(calculator_.GetNumber())
-                      .arg(OpToString(current_operation_))
-                      .arg(active_number_);
-    ui->l_formula->setText(str);
-
-    switch (current_operation_) {
-    case Operation::MULTIPLICATION:
-        calculator_.Mul(active_number_);
-        break;
-    case  Operation::DIVISION:
-        calculator_.Div(active_number_);
-        break;
-    case Operation::SUBTRACTION:
-        calculator_.Sub(active_number_);
-        break;
-    case Operation::ADDITION:
-        calculator_.Add(active_number_);
-        break;
-    case Operation::POWER:
-        calculator_.Pow(active_number_);
-        break;
-    default:
-        break;
-    }
-
-    active_number_ = calculator_.GetNumber();
-    QString result_str = QString::number(active_number_);
-    ui->l_result->setText(result_str);
-
-    input_number_ = result_str;
-    current_operation_ = Operation::NO_OPERATION;
-    has_result_ = true;
-}
-
-
-void MainWindow::on_tb_reset_clicked() {
-    current_operation_ = Operation::NO_OPERATION;
-    has_result_ = false;
-    ui->l_formula->setText("");
-    SetText("0");
-}
-
-
-void MainWindow::on_tb_ms_clicked() {
-    number_member_ = active_number_;
-    member_flag_ = true;
-
-    ui->l_memory->setText("M");
-}
-
-
-void MainWindow::on_tb_mc_clicked() {
-    number_member_ = {};
-    member_flag_ = false;
-
-    ui->l_memory->setText("");
-}
-
-
-void MainWindow::on_tn_mr_clicked() {
-    if(!member_flag_) {
-        return;
-    }
-
-    if (has_result_) {
-        ui->l_formula->setText("");
-        has_result_ = false;
-    }
-
-    active_number_ = number_member_;
-    input_number_ = QString::number(active_number_);
-    SetText(input_number_);
-}
